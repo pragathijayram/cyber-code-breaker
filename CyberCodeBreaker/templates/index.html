@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Code Breaker</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #161b22;
+            border: 2px solid #00ff66;
+            box-shadow: 0 0 15px #00ff66;
+            padding: 25px;
+            border-radius: 10px;
+            width: 380px;
+            text-align: center;
+        }
+        h1 { margin-bottom: 5px; font-size: 24px; text-shadow: 0 0 5px #00ff66; }
+        p { color: #8b949e; font-size: 13px; }
+        .input-group { margin: 20px 0; }
+        input {
+            background: #0d1117;
+            border: 1px solid #00ff66;
+            color: #00ff66;
+            font-size: 22px;
+            letter-spacing: 5px;
+            text-align: center;
+            padding: 8px;
+            width: 140px;
+            border-radius: 5px;
+            outline: none;
+        }
+        button {
+            background: #00ff66;
+            color: #0d1117;
+            border: none;
+            padding: 10px 15px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-left: 5px;
+        }
+        button:hover { background: #00cc52; }
+        .logs {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            padding: 10px;
+            font-size: 13px;
+            border-radius: 5px;
+        }
+        .log-entry { margin-bottom: 5px; }
+        .win { color: #00ff66; font-weight: bold; }
+        .lose { color: #ff4d4d; font-weight: bold; }
+        .info { color: #e3b341; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CYBER CODE BREAKER</h1>
+    <p>Break the 4-digit secret code. Unique digits only.</p>
+    
+    <div class="input-group">
+        <input type="text" id="guessInput" maxlength="4" placeholder="1234">
+        <button onclick="sendGuess()">HACK</button>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <span>Attempts Left: <b id="attempts">7</b></span>
+        <button onclick="resetGame()" style="background: #30363d; color: #fff; padding: 3px 8px;">Reset</button>
+    </div>
+
+    <div class="logs" id="logs">
+        <div class="log-entry info">> System Initialized. Awaiting input...</div>
+    </div>
+</div>
+
+<script>
+    async function sendGuess() {
+        const input = document.getElementById("guessInput");
+        const guess = input.value;
+        if (!guess) return;
+
+        const response = await fetch('/guess', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({guess: guess})
+        });
+        
+        const data = await response.json();
+        const logs = document.getElementById("logs");
+
+        if (data.status === "invalid") {
+            logs.innerHTML += `<div class="log-entry lose">> ERROR: ${data.message}</div>`;
+        } else if (data.status === "continue") {
+            document.getElementById("attempts").innerText = data.attempts_left;
+            logs.innerHTML += `<div class="log-entry">> [${data.guess}] ➔ Correct Position: ${data.exact} | Wrong Position: ${data.partial}</div>`;
+        } else if (data.status === "win") {
+            document.getElementById("attempts").innerText = "0";
+            logs.innerHTML += `<div class="log-entry win">> SUCCESS: ${data.message}</div>`;
+            input.disabled = true;
+        } else if (data.status === "lose") {
+            document.getElementById("attempts").innerText = "0";
+            logs.innerHTML += `<div class="log-entry lose">> FAILURE: ${data.message}</div>`;
+            input.disabled = true;
+        }
+        
+        input.value = "";
+        logs.scrollTop = logs.scrollHeight;
+    }
+
+    async function resetGame() {
+        await fetch('/reset', {method: 'POST'});
+        document.getElementById("attempts").innerText = "7";
+        document.getElementById("guessInput").disabled = false;
+        document.getElementById("logs").innerHTML = '<div class="log-entry info">> System Reset. New Code Generated.</div>';
+    }
+</script>
+
+</body>
+</html>
